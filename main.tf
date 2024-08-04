@@ -6,38 +6,7 @@ provider "azurerm" {
   }
 }
 
-# Variables
-variable "resource_group_name" {
-  default = "ephemeral-env-rg"
-}
-
-variable "location" {
-  default = "ukwest"
-}
-
-variable "vnet_name" {
-  default = "ephemeral-vnet"
-}
-
-variable "subnet_vm_name" {
-  default = "vm-subnet"
-}
-
-variable "subnet_aks_name" {
-  default = "aks-subnet"
-}
-
-variable "vm_name" {
-  default = "ephem-spot-vm" # Ensure the computer name length is <= 15 characters
-}
-
-variable "vm_size" {
-  default = "Standard_DS1_v2"
-}
-
-variable "aks_cluster_name" {
-  default = "ephemeral-aks-cluster"
-}
+# Variables are defined in a separate file, variables.tf
 
 # Resource Group
 resource "azurerm_resource_group" "rg" {
@@ -154,23 +123,22 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
   }
 }
 
-# Additional Spot Linux Node Pool
-resource "azurerm_kubernetes_cluster_node_pool" "spot_linux_node_pool" {
-  name                  = "splin1"
+# Additional Regular Linux Node Pool (No Spot)
+resource "azurerm_kubernetes_cluster_node_pool" "regular_linux_node_pool" {
+  name                  = "linpl1"
   kubernetes_cluster_id = azurerm_kubernetes_cluster.aks_cluster.id
   vm_size               = "Standard_DS2_v2"
   node_count            = 1
   os_type               = "Linux"
   vnet_subnet_id        = azurerm_subnet.subnet_aks.id
   max_pods              = 30
-  priority              = "Spot" # Use Spot VMs for this node pool
 
   tags = {
     environment = "ephemeral"
   }
 }
 
-# Additional Windows Node Pool
+# Additional Regular Windows Node Pool (No Spot)
 resource "azurerm_kubernetes_cluster_node_pool" "windows_node_pool" {
   name                  = "winpl1"
   kubernetes_cluster_id = azurerm_kubernetes_cluster.aks_cluster.id
@@ -182,38 +150,8 @@ resource "azurerm_kubernetes_cluster_node_pool" "windows_node_pool" {
   node_labels = {
     "os" = "windows"
   }
-  priority = "Spot" # Use Spot VMs for this node pool
 
   tags = {
     environment = "ephemeral"
   }
-}
-
-# Output IDs
-output "resource_group_id" {
-  value = azurerm_resource_group.rg.id
-}
-
-output "vnet_id" {
-  value = azurerm_virtual_network.vnet.id
-}
-
-output "subnet_vm_id" {
-  value = azurerm_subnet.subnet_vm.id
-}
-
-output "subnet_aks_id" {
-  value = azurerm_subnet.subnet_aks.id
-}
-
-output "vm_id" {
-  value = azurerm_windows_virtual_machine.spot_vm.id
-}
-
-output "aks_cluster_id" {
-  value = azurerm_kubernetes_cluster.aks_cluster.id
-}
-
-output "windows_node_pool_id" {
-  value = azurerm_kubernetes_cluster_node_pool.windows_node_pool.id
 }
